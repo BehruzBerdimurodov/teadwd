@@ -1,76 +1,43 @@
 import os
-import asyncio
 import logging
-from aiogram import Bot, Dispatcher, F, types
-from aiogram.filters import Command
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from dotenv import load_dotenv
-
-# .env faylidagi ma'lumotlarni yuklash
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, WebAppInfo
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 load_dotenv()
-
-# Tokenni .env faylidan olish
 TOKEN = os.getenv("BOT_TOKEN")
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-# Agar token xato yozilgan bo'lsa yoki topilmasa, kodni to'xtatish
-if not TOKEN:
-    raise ValueError("BOT_TOKEN .env faylidan topilmadi! Iltimos, tekshirib ko'ring.")
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-# Bot va Dispatcher obyektlari
-bot = Bot(token=TOKEN)
-dp = Dispatcher()
-
-# /start komandasi uchun handler
-@dp.message(Command("start"))
-async def start_handler(message: types.Message):
     kb = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(
-                text="🌐 Mini App ni ochish", 
-                web_app=WebAppInfo(url="https://example.com") # Mini App URL'i
-            )],
-            [InlineKeyboardButton(text="👋 Salom", callback_data="salom")],
-            [InlineKeyboardButton(text="📝 Ko'proq ma'lumot 1", callback_data="salom1")],
-            [InlineKeyboardButton(text="⚠️ Ogohlantirish 2", callback_data="salom2")],
+            [InlineKeyboardButton(text="salom",callback_data="salom", style='success')],
+            [InlineKeyboardButton(text="salom1",callback_data="salom1", style='primary')],
+            [InlineKeyboardButton(text="salom2",callback_data="salom2", style='danger')],
         ]
     )
+
     
-    await message.answer(
-        f"Assalomu alaykum, {message.from_user.first_name}! 🤖\n\n"
-        f"Men sizning botingizman. Quyidagi tugmalardan birini tanlang "
-        f"yoki Mini App ni oching:",
+    await update.message.reply_text(
+        "Assalomu alaykum! Kerakli tugmani tanlang:",
         reply_markup=kb
     )
 
-# "salom" tugmasi bosilganda
-@dp.callback_query(F.data == "salom")
-async def process_salom(callback: types.CallbackQuery):
-    await callback.message.answer("Salom! Qandaysiz? Bu uzun textlar va suhbatlar uchun birinchi javob. 😊")
-    await callback.answer()
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    
+    if query.data == "salom":
+        await query.message.reply_text("Swafawf")
+    elif query.data == "salom1":
+        await query.message.reply_text("Bwfawfawf")
+    elif query.data == "salom2":
+        await query.message.reply_text("awdawd")
 
-# "salom1" tugmasi bosilganda
-@dp.callback_query(F.data == "salom1")
-async def process_salom1(callback: types.CallbackQuery):
-    await callback.message.answer(
-        "Siz 'Ko'proq ma'lumot 1' tugmasini bosdingiz!\n\n"
-        "Bu yerda juda ko'p ma'lumotlar yozilishi mumkin. "
-        "Bot siz bilan turli mavzularda gaplashishga tayyor."
-    )
-    await callback.answer()
+if __name__ == '__main__':
+    application = ApplicationBuilder().token(TOKEN).build()
 
-# "salom2" tugmasi bosilganda
-@dp.callback_query(F.data == "salom2")
-async def process_salom2(callback: types.CallbackQuery):
-    await callback.message.answer(
-        "Diqqat! Bu xuddi siz xohlagan 'danger' (xavfli/ogohlantiruvchi) holat uchun javob matni. 🚨"
-    )
-    await callback.answer()
-
-# Asosiy ishga tushirish funksiyasi
-async def main():
-    logging.basicConfig(level=logging.INFO)
-    print("Bot ishga tushdi...")
-    await dp.start_polling(bot)
-
-if __name__ == "__main__":
-    asyncio.run(main())
+    application.add_handler(CommandHandler('start', start))
+    application.add_handler(CallbackQueryHandler(button_handler))
+    print("Bot ishlamoqda...")
+    application.run_polling()
